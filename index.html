@@ -1365,15 +1365,57 @@ const _renderGallery = renderGallery;
 window.renderGallery = function() { _renderGallery(); setTimeout(observeReveals, 100); };
 
 // ── BOOKING ───────────────────────────────────────
-function handleBooking(e) {
+// ── BOOKING ───────────────────────────────────────
+async function handleBooking(e) {
   e.preventDefault();
   const btn = e.target;
-  btn.textContent = '✓ Booking Confirmed! We\'ll be in touch shortly.';
-  btn.style.background = 'var(--bronze)';
+  const form = btn.closest('.booking-form');
+  
+  // 1. Gather form values based on your HTML structure
+  const bookingData = {
+    firstName: form.querySelector('input[placeholder="Arjun"]').value,
+    lastName: form.querySelector('input[placeholder="Kumar"]').value,
+    phone: form.querySelector('input[type="tel"]').value,
+    email: form.querySelector('input[type="email"]').value,
+    service: form.querySelector('select').value,
+    date: form.querySelector('input[type="date"]').value,
+    time: form.querySelectorAll('select')[1].value, // Second select element in the form
+    notes: form.querySelector('textarea').value,
+    createdAt: new Date()
+  };
+
+  // Validation check
+  if (!bookingData.firstName || !bookingData.phone || !bookingData.service) {
+    btn.textContent = '✗ Please fill in required fields';
+    btn.style.background = '#8a2323'; // Dark red for error
+    return;
+  }
+
+  btn.textContent = 'Sending Reservation...';
+  btn.disabled = true;
+
+  try {
+    // 2. Write to Firestore using the global window variables defined in <head>
+    await window.addDoc(window.collection(window.db, "bookings"), bookingData);
+    
+    // 3. UI Success State
+    btn.textContent = '✓ Booking Confirmed! We\'ll be in touch shortly.';
+    btn.style.background = 'var(--bronze)';
+    form.reset(); // Clear the form fields
+    
+  } catch (error) {
+    console.error("Error adding document: ", error);
+    btn.textContent = '✗ Connection Error. Try Again.';
+    btn.style.background = '#8a2323';
+    btn.disabled = false;
+  }
+
+  // Reset button state after a delay
   setTimeout(() => {
     btn.textContent = 'Confirm My Booking →';
     btn.style.background = '';
-  }, 4000);
+    btn.disabled = false;
+  }, 5000);
 }
 
 // ── MENU ─────────────────────────────────────────
