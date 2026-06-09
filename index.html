@@ -1240,7 +1240,7 @@
 // ── DATA ─────────────────────────────────────────
 const galleryData = [
   // Cuts & Fades
-  {name:'High Skin Fade',stylist:'Sheik — Lead Stylist',cat:'cuts',tag:'Cuts & Fades',g:'g-4'},
+  {name:'High Skin Fade',stylist:'Sheik — Lead Stylist',cat:'cuts',tag:'Cuts & Fades',g:'image1.jpeg'},
   {name:'Classic Taper',stylist:'Rajan — Senior Stylist',cat:'cuts',tag:'Cuts & Fades',g:'g-2'},
   {name:'Mid Fade + Design',stylist:'Sheik — Lead Stylist',cat:'cuts',tag:'Cuts & Fades',g:'g-7'},
   {name:'Textured Quiff Fade',stylist:'Arif — Style Expert',cat:'cuts',tag:'Cuts & Fades',g:'g-5'},
@@ -1307,7 +1307,7 @@ function renderGallery() {
   const toShow = filtered.slice(0, visibleCount);
   grid.innerHTML = toShow.map(item => `
     <div class="gallery-item reveal" onclick="openLightbox('${item.g}','${item.tag}','${item.name}','${item.stylist}')">
-      <div class="gallery-item-bg ${item.g}"></div>
+      <div class="gallery-item-bg" style="background-image: url('${item.g}')"></div>
       <div class="item-tag">${item.tag}</div>
       <div class="gallery-item-overlay">
         <div class="item-cat">${item.tag}</div>
@@ -1380,7 +1380,7 @@ document.getElementById('reviewsGrid').innerHTML = reviewsData.map(r => `
 // ── LIGHTBOX ──────────────────────────────────────
 function openLightbox(bg, cat, name, stylist) {
   const lb = document.getElementById('lightbox');
-  document.getElementById('lightboxImg').className = `lightbox-img ${bg}`;
+  document.getElementById('lightboxImg').style.backgroundImage = `url('${bg}')`;
   document.getElementById('lightboxCat').textContent = cat;
   document.getElementById('lightboxTitle').textContent = name;
   document.getElementById('lightboxStylist').textContent = 'by ' + stylist;
