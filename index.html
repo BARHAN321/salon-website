@@ -742,85 +742,76 @@
     .process-steps::before { display: none; }
   }
 </style>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-  import { getAuth, createUserWithEmailAndPassword, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+ <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDJQlAXFnMx5pYLc3X9QeoxpsfyyIc_Lnk",
-    authDomain: "sheikfx-website.firebaseapp.com",
-    projectId: "sheikfx-website",
-    storageBucket: "sheikfx-website.firebasestorage.app",
-    messagingSenderId: "771023238365",
-    appId: "1:771023238365:web:8d853b10c6cb951a955734"
-  };
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJQlAXFnMx5pYLc3X9QeoxpsfyyIc_Lnk",
+      authDomain: "sheikfx-website.firebaseapp.com",
+      projectId: "sheikfx-website",
+      storageBucket: "sheikfx-website.firebasestorage.app",
+      messagingSenderId: "771023238365",
+      appId: "1:771023238365:web:8d853b10c6cb951a955734"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-  // Handle form submission
-  document.addEventListener('DOMContentLoaded', function() {
-    const submitBtn = document.querySelector('.btn-submit');
-    if (submitBtn) {
-      submitBtn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        await submitBooking();
-      });
-    }
-  });
+    // FIX: Expose handleBooking to the HTML button click
+    window.handleBooking = async function(e) {
+      e.preventDefault();
+      const btn = e.target;
+      const form = btn.closest('.booking-form');
 
-  async function submitBooking() {
-    try {
-      const firstName = document.querySelector('input[placeholder="Arjun"]').value;
-      const lastName = document.querySelector('input[placeholder="Kumar"]').value;
-      const phone = document.querySelector('input[placeholder="+91 98XXX XXXXX"]').value;
-      const email = document.querySelector('input[placeholder="arjun@email.com"]').value;
-      const service = document.querySelector('select').value;
+      const bookingData = {
+        firstName: form.querySelector('input[placeholder="Arjun"]').value,
+        lastName: form.querySelector('input[placeholder="Kumar"]').value,
+        phone: form.querySelector('input[type="tel"]').value,
+        email: form.querySelector('input[type="email"]').value,
+        service: form.querySelector('select').value,
+        date: form.querySelector('input[type="date"]').value,
+        time: form.querySelectorAll('select')[1].value,
+        notes: form.querySelector('textarea').value,
+        createdAt: new Date()
+      };
 
-      if (!firstName || !lastName || !phone || !email || !service) {
-        alert('Please fill all fields');
+      if (!bookingData.firstName || !bookingData.phone || !bookingData.service) {
+        btn.textContent = '✗ Please fill in required fields';
+        btn.style.background = '#8a2323';
         return;
       }
 
-      // Sign in anonymously if not already signed in
+      btn.textContent = 'Sending Reservation...';
+      btn.disabled = true;
+
       try {
+        // Authenticate anonymously first
         await signInAnonymously(auth);
-      } catch (err) {
-        console.log('User already signed in');
+        
+        // FIX: Removed 'window.' prefix so it uses the direct Firebase imports above
+        await addDoc(collection(db, "bookings"), bookingData);
+
+        btn.textContent = '✓ Booking Confirmed!';
+        btn.style.background = 'var(--bronze)';
+        form.reset();
+      } catch (error) {
+        console.error("Error adding document: ", error);
+        btn.textContent = '✗ Connection Error. Try Again.';
+        btn.style.background = '#8a2323';
+        btn.disabled = false;
       }
 
-      // Add booking to Firestore
-      const docRef = await addDoc(collection(db, "bookings"), {
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
-        email: email,
-        service: service,
-        timestamp: serverTimestamp(),
-        status: "pending"
-      });
-
-      console.log("Booking saved with ID: ", docRef.id);
-      alert('Booking confirmed! We'll contact you shortly.');
-      
-      // Clear form
-      document.querySelector('input[placeholder="Arjun"]').value = '';
-      document.querySelector('input[placeholder="Kumar"]').value = '';
-      document.querySelector('input[placeholder="+91 98XXX XXXXX"]').value = '';
-      document.querySelector('input[placeholder="arjun@email.com"]').value = '';
-
-    } catch (error) {
-      console.error("Error saving booking: ", error);
-      alert('Error saving booking: ' + error.message);
+      setTimeout(() => {
+        btn.textContent = 'Confirm My Booking →';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 5000);
     }
-  }
-
-  window.submitBooking = submitBooking;
-</script>
 </head>
 <body>
 
@@ -1426,7 +1417,7 @@ window.renderGallery = function() { _renderGallery(); setTimeout(observeReveals,
 
 // ── BOOKING ───────────────────────────────────────
 // ── BOOKING ───────────────────────────────────────
-async function handleBooking(e) {
+window.handleBooking = async function(e) {
   e.preventDefault();
   const btn = e.target;
   const form = btn.closest('.booking-form');
@@ -1455,33 +1446,34 @@ async function handleBooking(e) {
   btn.disabled = true;
 
   try {
-    // 2. Write to Firestore using the global window variables defined in <head>
-    await window.addDoc(window.collection(window.db, "bookings"), bookingData);
-    
-    // 3. UI Success State
-    btn.textContent = '✓ Booking Confirmed! We\'ll be in touch shortly.';
-    btn.style.background = 'var(--bronze)';
-    form.reset(); // Clear the form fields
-    
-  } catch (error) {
-    console.error("Error adding document: ", error);
-    btn.textContent = '✗ Connection Error. Try Again.';
-    btn.style.background = '#8a2323';
-    btn.disabled = false;
-  }
+        // Authenticate anonymously first
+        await signInAnonymously(auth);
+        
+        // Save the booking data to Firestore
+        await addDoc(collection(db, "bookings"), bookingData);
 
-  // Reset button state after a delay
-  setTimeout(() => {
-    btn.textContent = 'Confirm My Booking →';
-    btn.style.background = '';
-    btn.disabled = false;
-  }, 5000);
-}
+        btn.textContent = '✓ Booking Confirmed!';
+        btn.style.background = 'var(--bronze)';
+        form.reset();
+      } catch (error) {
+        console.error("Error adding document: ", error);
+        btn.textContent = '✗ Connection Error. Try Again.';
+        btn.style.background = '#8a2323';
+        btn.disabled = false;
+      }
+
+      setTimeout(() => {
+        btn.textContent = 'Confirm My Booking →';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 5000);
+    };
 
 // ── MENU ─────────────────────────────────────────
-function toggleMenu() {
+// FIX: Change 'function toggleMenu()' to 'window.toggleMenu = function()'
+window.toggleMenu = function() {
   // simple mobile: scroll to booking
-  document.getElementById('booking').scrollIntoView({behavior:'smooth'});
+  document.getElementById('booking').scrollIntoView({behavior: 'smooth'});
 }
 
 // ── INIT ──────────────────────────────────────────
